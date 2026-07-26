@@ -1,5 +1,9 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
+const SUPABASE_URL = 'https://haikpurfsxhowbzuwgpr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_UnZUvk8USS5IfenBNcACdA_NMiNUWbw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const DEFAULT_CATEGORIES = [
   { key: 'medicine', label: 'Medicine', hue: 350 },
   { key: 'tech', label: 'Tech Essentials', hue: 30 },
@@ -12,10 +16,6 @@ const DEFAULT_CATEGORIES = [
 const HUE_CYCLE = [350, 30, 60, 200, 280, 120, 170];
 const NEUTRAL_SOFT = 'oklch(93% 0.012 80)';
 
-const STORAGE_KEY = 'bali-list-items-v2';
-const CATEGORY_STORAGE_KEY = 'bali-list-categories-v2';
-const SAVINGS_STORAGE_KEY = 'bali-list-savings-v1';
-
 const WEATHER_CODE_LABELS = {
   0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
   45: 'Foggy', 48: 'Foggy', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
@@ -23,18 +23,6 @@ const WEATHER_CODE_LABELS = {
   80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy showers',
   95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm',
 };
-
-function loadJSON(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return fallback;
-}
-
-function saveJSON(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
-}
 
 const DEFAULT_ITEM_NAMES = {
   medicine: [
@@ -77,6 +65,61 @@ const DEFAULT_ITEMS = Object.entries(DEFAULT_ITEM_NAMES).flatMap(([category, nam
   names.map((name, i) => ({ id: `${category}-${i + 1}`, name, note: '', category, checked: false }))
 );
 
+const DEFAULT_VILLAS = [
+  { id: 'villa-1', label: 'Villa Month 1', url: '', dates: '' },
+  { id: 'villa-2', label: 'Villa Month 2', url: '', dates: '' },
+  { id: 'villa-3', label: 'Villa Month 3', url: '', dates: '' },
+];
+
+async function seedIfEmpty() {
+  const { count, error } = await sb.from('categories').select('*', { count: 'exact', head: true });
+  if (error) { console.error(error); return; }
+  if (count === 0) {
+    await sb.from('categories').insert(DEFAULT_CATEGORIES.map((c, i) => ({ ...c, position: i })));
+    await sb.from('items').insert(DEFAULT_ITEMS.map((it, i) => ({ ...it, position: i })));
+  }
+}
+
+async function seedVillasIfEmpty() {
+  const { count, error } = await sb.from('villas').select('*', { count: 'exact', head: true });
+  if (error) { console.error(error); return; }
+  if (count === 0) {
+    await sb.from('villas').insert(DEFAULT_VILLAS.map((v, i) => ({ ...v, position: i })));
+  }
+}
+
+async function fetchCategories() {
+  const { data, error } = await sb.from('categories').select('*').order('position', { ascending: true });
+  if (error) { console.error(error); return null; }
+  return data.map(r => ({ key: r.key, label: r.label, hue: r.hue }));
+}
+
+async function fetchItems() {
+  const { data, error } = await sb.from('items').select('*').order('position', { ascending: true });
+  if (error) { console.error(error); return null; }
+  return data.map(r => ({ id: r.id, name: r.name, note: r.note || '', category: r.category, checked: r.checked }));
+}
+
+async function fetchSavings() {
+  const { data, error } = await sb.from('settings').select('savings').eq('id', 1).single();
+  if (error) { console.error(error); return null; }
+  return Number(data.savings);
+}
+
+async function fetchVillas() {
+  const { data, error } = await sb.from('villas').select('*').order('position', { ascending: true });
+  if (error) { console.error(error); return null; }
+  return data.map(r => ({ id: r.id, label: r.label, url: r.url || '', dates: r.dates || '' }));
+}
+
+function formatBaliTime(date) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Makassar',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
 function computeCountdown() {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -93,19 +136,22 @@ function formatGBP(amount) {
 }
 
 function App() {
-  const [items, setItems] = useState(() => loadJSON(STORAGE_KEY, DEFAULT_ITEMS));
-  const [categories, setCategories] = useState(() => loadJSON(CATEGORY_STORAGE_KEY, DEFAULT_CATEGORIES));
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState(DEFAULT_ITEMS);
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [activeFilter, setActiveFilter] = useState('all');
   const [newItemText, setNewItemText] = useState('');
   const [newItemNote, setNewItemNote] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState(() => (loadJSON(CATEGORY_STORAGE_KEY, DEFAULT_CATEGORIES)[0] || DEFAULT_CATEGORIES[0]).key);
+  const [newItemCategory, setNewItemCategory] = useState(DEFAULT_CATEGORIES[0].key);
   const [managingCategories, setManagingCategories] = useState(false);
   const [newCategoryLabel, setNewCategoryLabel] = useState('');
-  const [savings, setSavings] = useState(() => loadJSON(SAVINGS_STORAGE_KEY, 3000));
+  const [savings, setSavings] = useState(3000);
   const [editingSavings, setEditingSavings] = useState(false);
   const [savingsDraft, setSavingsDraft] = useState('');
   const [weather, setWeather] = useState(null);
   const [weatherStatus, setWeatherStatus] = useState('loading');
+  const [villas, setVillas] = useState(DEFAULT_VILLAS);
+  const [baliTime, setBaliTime] = useState(() => formatBaliTime(new Date()));
 
   useEffect(() => {
     fetch('https://api.open-meteo.com/v1/forecast?latitude=-8.829&longitude=115.084&current_weather=true&timezone=auto')
@@ -121,15 +167,51 @@ function App() {
       .catch(() => setWeatherStatus('error'));
   }, []);
 
-  function persistItems(next) {
-    setItems(next);
-    saveJSON(STORAGE_KEY, next);
-  }
+  useEffect(() => {
+    const id = setInterval(() => setBaliTime(formatBaliTime(new Date())), 30000);
+    return () => clearInterval(id);
+  }, []);
 
-  function persistCategories(next) {
-    setCategories(next);
-    saveJSON(CATEGORY_STORAGE_KEY, next);
-  }
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      await seedIfEmpty();
+      await seedVillasIfEmpty();
+      const [cats, its, sav, vils] = await Promise.all([fetchCategories(), fetchItems(), fetchSavings(), fetchVillas()]);
+      if (cancelled) return;
+      if (cats && cats.length) {
+        setCategories(cats);
+        setNewItemCategory(cats[0].key);
+      }
+      if (its) setItems(its);
+      if (sav != null) setSavings(sav);
+      if (vils) setVillas(vils);
+      setLoading(false);
+    }
+    init();
+
+    const channel = sb
+      .channel('bali-list-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => {
+        fetchItems().then(its => its && setItems(its));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        fetchCategories().then(cats => cats && setCategories(cats));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+        fetchSavings().then(sav => sav != null && setSavings(sav));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'villas' }, () => {
+        fetchVillas().then(vils => vils && setVillas(vils));
+      })
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      sb.removeChannel(channel);
+    };
+  }, []);
 
   function addItem() {
     const text = newItemText.trim();
@@ -141,17 +223,23 @@ function App() {
       category: newItemCategory,
       checked: false,
     };
-    persistItems([...items, item]);
+    setItems(prev => [...prev, item]);
     setNewItemText('');
     setNewItemNote('');
+    sb.from('items').insert({ ...item, position: items.length }).then(({ error }) => { if (error) console.error(error); });
   }
 
   function toggleItem(id) {
-    persistItems(items.map(it => it.id === id ? { ...it, checked: !it.checked } : it));
+    const target = items.find(it => it.id === id);
+    if (!target) return;
+    const nextChecked = !target.checked;
+    setItems(prev => prev.map(it => it.id === id ? { ...it, checked: nextChecked } : it));
+    sb.from('items').update({ checked: nextChecked }).eq('id', id).then(({ error }) => { if (error) console.error(error); });
   }
 
   function deleteItem(id) {
-    persistItems(items.filter(it => it.id !== id));
+    setItems(prev => prev.filter(it => it.id !== id));
+    sb.from('items').delete().eq('id', id).then(({ error }) => { if (error) console.error(error); });
   }
 
   function addCategory() {
@@ -160,23 +248,30 @@ function App() {
     const key = 'cat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
     const usedHues = categories.map(c => c.hue);
     const hue = HUE_CYCLE.find(h => !usedHues.includes(h)) ?? HUE_CYCLE[categories.length % HUE_CYCLE.length];
-    persistCategories([...categories, { key, label, hue }]);
+    const newCat = { key, label, hue };
+    setCategories(prev => [...prev, newCat]);
     setNewCategoryLabel('');
+    sb.from('categories').insert({ ...newCat, position: categories.length }).then(({ error }) => { if (error) console.error(error); });
   }
 
   function renameCategory(key, label) {
-    persistCategories(categories.map(c => c.key === key ? { ...c, label } : c));
+    setCategories(prev => prev.map(c => c.key === key ? { ...c, label } : c));
+    sb.from('categories').update({ label }).eq('key', key).then(({ error }) => { if (error) console.error(error); });
   }
 
-  function deleteCategory(key) {
+  async function deleteCategory(key) {
     if (categories.length <= 1) return;
     const next = categories.filter(c => c.key !== key);
     const fallbackKey = next[0].key;
-    const nextItems = items.map(it => it.category === key ? { ...it, category: fallbackKey } : it);
-    persistCategories(next);
-    persistItems(nextItems);
+    setCategories(next);
+    setItems(prev => prev.map(it => it.category === key ? { ...it, category: fallbackKey } : it));
     if (newItemCategory === key) setNewItemCategory(fallbackKey);
     if (activeFilter === key) setActiveFilter('all');
+
+    const { error: updErr } = await sb.from('items').update({ category: fallbackKey }).eq('category', key);
+    if (updErr) { console.error(updErr); return; }
+    const { error: delErr } = await sb.from('categories').delete().eq('key', key);
+    if (delErr) console.error(delErr);
   }
 
   function startEditSavings() {
@@ -188,8 +283,30 @@ function App() {
     const val = parseFloat(savingsDraft);
     const next = isNaN(val) ? savings : Math.max(0, val);
     setSavings(next);
-    saveJSON(SAVINGS_STORAGE_KEY, next);
     setEditingSavings(false);
+    sb.from('settings').update({ savings: next }).eq('id', 1).then(({ error }) => { if (error) console.error(error); });
+  }
+
+  function updateVillaField(id, field, value) {
+    setVillas(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
+  }
+
+  function commitVillaField(id, field) {
+    const target = villas.find(v => v.id === id);
+    if (!target) return;
+    sb.from('villas').update({ [field]: target[field] }).eq('id', id).then(({ error }) => { if (error) console.error(error); });
+  }
+
+  function addVilla() {
+    const id = 'villa-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const villa = { id, label: `Villa Month ${villas.length + 1}`, url: '', dates: '' };
+    setVillas(prev => [...prev, villa]);
+    sb.from('villas').insert({ ...villa, position: villas.length }).then(({ error }) => { if (error) console.error(error); });
+  }
+
+  function deleteVilla(id) {
+    setVillas(prev => prev.filter(v => v.id !== id));
+    sb.from('villas').delete().eq('id', id).then(({ error }) => { if (error) console.error(error); });
   }
 
   const countdown = useMemo(() => computeCountdown(), []);
@@ -206,6 +323,18 @@ function App() {
     .filter(Boolean);
 
   const showEmpty = filtered.length === 0;
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="page-inner">
+          <div className="empty-state">
+            <div className="empty-caption">Loading your list…</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -397,11 +526,57 @@ function App() {
         <div className="weather-card">
           <div>
             <div className="weather-label">Uluwatu right now</div>
+            <div className="weather-time">{baliTime}</div>
             {weatherStatus === 'ok' && <div className="weather-status">{WEATHER_CODE_LABELS[weather.weathercode] || 'Weather update'}</div>}
             {weatherStatus === 'loading' && <div className="weather-status pending">Fetching weather…</div>}
             {weatherStatus === 'error' && <div className="weather-status pending">Weather unavailable</div>}
           </div>
           {weatherStatus === 'ok' && <div className="weather-temp">{Math.round(weather.temperature)}°C</div>}
+        </div>
+
+        <div className="villas-section">
+          <div className="section-title" style={{ color: 'oklch(55% 0.02 60)' }}>Villas</div>
+          <div className="villas-list">
+            {villas.map(v => (
+              <div className="villa-card" key={v.id}>
+                <div className="villa-card-header">
+                  <input
+                    className="villa-label-input"
+                    value={v.label}
+                    onChange={e => updateVillaField(v.id, 'label', e.target.value)}
+                    onBlur={() => commitVillaField(v.id, 'label')}
+                  />
+                  <button
+                    className="villa-delete"
+                    aria-label="Delete villa"
+                    onClick={() => deleteVilla(v.id)}
+                  >
+                    &#10005;
+                  </button>
+                </div>
+                <input
+                  className="villa-url-input"
+                  placeholder="Villa link (URL)…"
+                  value={v.url}
+                  onChange={e => updateVillaField(v.id, 'url', e.target.value)}
+                  onBlur={() => commitVillaField(v.id, 'url')}
+                />
+                <input
+                  className="villa-dates-input"
+                  placeholder="Dates (e.g. 12 Aug – 10 Sep)"
+                  value={v.dates}
+                  onChange={e => updateVillaField(v.id, 'dates', e.target.value)}
+                  onBlur={() => commitVillaField(v.id, 'dates')}
+                />
+                {v.url && (
+                  <a className="villa-link" href={v.url} target="_blank" rel="noopener noreferrer">
+                    Open link ↗
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+          <button className="villa-add-btn" onClick={addVilla}>+ Add villa month</button>
         </div>
       </div>
     </div>

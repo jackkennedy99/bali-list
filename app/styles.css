@@ -450,6 +450,13 @@ button, input {
   color: var(--text-muted);
   margin-bottom: 4px;
 }
+.weather-time {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: oklch(35% 0.02 60);
+  margin-bottom: 2px;
+}
 .weather-status {
   font-size: 14px;
   font-weight: 700;
@@ -463,4 +470,83 @@ button, input {
   font-size: 30px;
   font-weight: 600;
   color: oklch(45% 0.05 200);
+}
+
+/* Villas */
+.villas-section {
+  margin-top: 22px;
+}
+.villas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.villa-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 1px 2px oklch(30% 0.02 60 / 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.villa-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.villa-label-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  padding: 2px 0;
+}
+.villa-delete {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: oklch(70% 0.02 60);
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.villa-url-input,
+.villa-dates-input {
+  border: none;
+  outline: none;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.villa-link {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  color: oklch(55% 0.09 350);
+  text-decoration: none;
+}
+.villa-link:hover {
+  text-decoration: underline;
+}
+.villa-add-btn {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--accent-pink);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
 }
