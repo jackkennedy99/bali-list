@@ -291,10 +291,8 @@ function App() {
     setVillas(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
   }
 
-  function commitVillaField(id, field) {
-    const target = villas.find(v => v.id === id);
-    if (!target) return;
-    sb.from('villas').update({ [field]: target[field] }).eq('id', id).then(({ error }) => { if (error) console.error(error); });
+  function commitVillaField(id, field, value) {
+    sb.from('villas').update({ [field]: value }).eq('id', id).then(({ error }) => { if (error) console.error(error); });
   }
 
   function addVilla() {
@@ -544,7 +542,7 @@ function App() {
                     className="villa-label-input"
                     value={v.label}
                     onChange={e => updateVillaField(v.id, 'label', e.target.value)}
-                    onBlur={() => commitVillaField(v.id, 'label')}
+                    onBlur={e => commitVillaField(v.id, 'label', e.target.value)}
                   />
                   <button
                     className="villa-delete"
@@ -559,14 +557,14 @@ function App() {
                   placeholder="Villa link (URL)…"
                   value={v.url}
                   onChange={e => updateVillaField(v.id, 'url', e.target.value)}
-                  onBlur={() => commitVillaField(v.id, 'url')}
+                  onBlur={e => commitVillaField(v.id, 'url', e.target.value)}
                 />
                 <input
                   className="villa-dates-input"
                   placeholder="Dates (e.g. 12 Aug – 10 Sep)"
                   value={v.dates}
                   onChange={e => updateVillaField(v.id, 'dates', e.target.value)}
-                  onBlur={() => commitVillaField(v.id, 'dates')}
+                  onBlur={e => commitVillaField(v.id, 'dates', e.target.value)}
                 />
                 {v.url && (
                   <a className="villa-link" href={v.url} target="_blank" rel="noopener noreferrer">
