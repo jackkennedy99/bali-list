@@ -518,8 +518,7 @@ button, input {
   cursor: pointer;
   border-radius: 50%;
 }
-.villa-url-input,
-.villa-dates-input {
+.villa-url-input {
   border: none;
   outline: none;
   background: var(--bg);
@@ -528,6 +527,35 @@ button, input {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+}
+.villa-dates-row {
+  display: flex;
+  gap: 8px;
+}
+.villa-date-field {
+  flex: 1;
+  min-width: 0;
+}
+.villa-date-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.villa-date-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Nunito Sans', sans-serif;
 }
 .villa-link {
   align-self: flex-start;

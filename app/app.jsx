@@ -61,14 +61,16 @@ const DEFAULT_ITEM_NAMES = {
   ],
 };
 
-const DEFAULT_ITEMS = Object.entries(DEFAULT_ITEM_NAMES).flatMap(([category, names]) =>
-  names.map((name, i) => ({ id: `${category}-${i + 1}`, name, note: '', category, checked: false }))
-);
+const DEFAULT_ITEMS = Object.entries(DEFAULT_ITEM_NAMES)
+  .flatMap(([category, names]) =>
+    names.map((name, i) => ({ id: `${category}-${i + 1}`, name, note: '', category, checked: false }))
+  )
+  .map((it, i) => ({ ...it, position: i }));
 
 const DEFAULT_VILLAS = [
-  { id: 'villa-1', label: 'Villa Month 1', url: '', dates: '' },
-  { id: 'villa-2', label: 'Villa Month 2', url: '', dates: '' },
-  { id: 'villa-3', label: 'Villa Month 3', url: '', dates: '' },
+  { id: 'villa-1', label: 'Villa Month 1', url: '', check_in: '', check_out: '' },
+  { id: 'villa-2', label: 'Villa Month 2', url: '', check_in: '', check_out: '' },
+  { id: 'villa-3', label: 'Villa Month 3', url: '', check_in: '', check_out: '' },
 ];
 
 async function seedIfEmpty() {
@@ -97,7 +99,7 @@ async function fetchCategories() {
 async function fetchItems() {
   const { data, error } = await sb.from('items').select('*').order('position', { ascending: true });
   if (error) { console.error(error); return null; }
-  return data.map(r => ({ id: r.id, name: r.name, note: r.note || '', category: r.category, checked: r.checked }));
+  return data.map(r => ({ id: r.id, name: r.name, note: r.note || '', category: r.category, checked: r.checked, position: r.position }));
 }
 
 async function fetchSavings() {
@@ -109,7 +111,13 @@ async function fetchSavings() {
 async function fetchVillas() {
   const { data, error } = await sb.from('villas').select('*').order('position', { ascending: true });
   if (error) { console.error(error); return null; }
-  return data.map(r => ({ id: r.id, label: r.label, url: r.url || '', dates: r.dates || '' }));
+  return data.map(r => ({
+    id: r.id,
+    label: r.label,
+    url: r.url || '',
+    check_in: r.check_in || '',
+    check_out: r.check_out || '',
+  }));
 }
 
 function formatBaliTime(date) {
@@ -216,17 +224,19 @@ function App() {
   function addItem() {
     const text = newItemText.trim();
     if (!text) return;
+    const minPosition = items.length ? Math.min(...items.map(it => it.position ?? 0)) : 0;
     const item = {
       id: 'item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       name: text,
       note: newItemNote.trim(),
       category: newItemCategory,
       checked: false,
+      position: minPosition - 1,
     };
-    setItems(prev => [...prev, item]);
+    setItems(prev => [item, ...prev]);
     setNewItemText('');
     setNewItemNote('');
-    sb.from('items').insert({ ...item, position: items.length }).then(({ error }) => { if (error) console.error(error); });
+    sb.from('items').insert(item).then(({ error }) => { if (error) console.error(error); });
   }
 
   function toggleItem(id) {
@@ -297,7 +307,7 @@ function App() {
 
   function addVilla() {
     const id = 'villa-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-    const villa = { id, label: `Villa Month ${villas.length + 1}`, url: '', dates: '' };
+    const villa = { id, label: `Villa Month ${villas.length + 1}`, url: '', check_in: '', check_out: '' };
     setVillas(prev => [...prev, villa]);
     sb.from('villas').insert({ ...villa, position: villas.length }).then(({ error }) => { if (error) console.error(error); });
   }
@@ -559,13 +569,32 @@ function App() {
                   onChange={e => updateVillaField(v.id, 'url', e.target.value)}
                   onBlur={e => commitVillaField(v.id, 'url', e.target.value)}
                 />
-                <input
-                  className="villa-dates-input"
-                  placeholder="Dates (e.g. 12 Aug – 10 Sep)"
-                  value={v.dates}
-                  onChange={e => updateVillaField(v.id, 'dates', e.target.value)}
-                  onBlur={e => commitVillaField(v.id, 'dates', e.target.value)}
-                />
+                <div className="villa-dates-row">
+                  <div className="villa-date-field">
+                    <div className="villa-date-label">Check-in</div>
+                    <input
+                      type="date"
+                      className="villa-date-input"
+                      value={v.check_in}
+                      onChange={e => {
+                        updateVillaField(v.id, 'check_in', e.target.value);
+                        commitVillaField(v.id, 'check_in', e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="villa-date-field">
+                    <div className="villa-date-label">Check-out</div>
+                    <input
+                      type="date"
+                      className="villa-date-input"
+                      value={v.check_out}
+                      onChange={e => {
+                        updateVillaField(v.id, 'check_out', e.target.value);
+                        commitVillaField(v.id, 'check_out', e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
                 {v.url && (
                   <a className="villa-link" href={v.url} target="_blank" rel="noopener noreferrer">
                     Open link ↗
