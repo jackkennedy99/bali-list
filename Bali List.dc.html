@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes checkPop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  body { margin: 0; background: oklch(96% 0.015 80); }
+  ::selection { background: oklch(85% 0.06 350); }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; width: 100%; background: oklch(96% 0.015 80); font-family: 'Nunito Sans', sans-serif; color: oklch(30% 0.02 60); display: flex; justify-content: center;">
+  <div style="width: 100%; max-width: 480px; padding: max(24px, env(safe-area-inset-top)) 20px calc(100px + env(safe-area-inset-bottom)) 20px; box-sizing: border-box; position: relative;">
+
+    <div style="position: relative; margin: -8px -20px 24px; height: 180px; border-radius: 0 0 28px 28px; overflow: hidden; background-image: url('assets/bali-sunset.png'); background-size: cover; background-position: center 65%; display: flex; align-items: center; justify-content: center;">
+      <div style="position: absolute; inset: 0; background: linear-gradient(180deg, oklch(20% 0.03 30 / 0.35) 0%, oklch(15% 0.03 30 / 0.55) 100%);"></div>
+      <div style="position: relative; text-align: center;">
+        <div style="font-family: 'Fraunces', serif; font-weight: 600; font-size: 38px; color: white; letter-spacing: -0.01em; text-shadow: 0 2px 12px oklch(0% 0 0 / 0.5), 0 1px 3px oklch(0% 0 0 / 0.6);">Bali List</div>
+        <div style="font-size: 13px; color: white; margin-top: 4px; font-weight: 700; text-shadow: 0 1px 6px oklch(0% 0 0 / 0.6);">{{ remainingText }}</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+      <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; flex: 1; min-width: 0;">
+        <sc-for list="{{ categoryTabs }}" as="cat" hint-placeholder-count="4">
+          <button onClick="{{ cat.onSelect }}" style="flex: 0 0 auto; border: none; padding: 8px 16px; border-radius: 999px; font-family: 'Nunito Sans', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; background: {{ cat.bg }}; color: {{ cat.color }}; transition: background 0.15s;">{{ cat.label }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ onToggleManageCategories }}" aria-label="Edit categories" style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; border: none; background: oklch(93% 0.012 80); color: oklch(45% 0.02 60); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✎</button>
+    </div>
+
+    <sc-if value="{{ managingCategories }}" hint-placeholder-val="{{ false }}">
+      <div style="background: oklch(99% 0.008 80); border-radius: 18px; padding: 14px; margin-bottom: 16px; box-shadow: 0 1px 2px oklch(30% 0.02 60 / 0.06);">
+        <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(55% 0.02 60); margin-bottom: 10px;">Edit categories</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+          <sc-for list="{{ manageRows }}" as="row" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 12px; height: 12px; border-radius: 50%; background: {{ row.dot }}; flex: 0 0 auto;"></span>
+              <input value="{{ row.label }}" onChange="{{ row.onLabelChange }}" style="flex: 1; min-width: 0; border: none; outline: none; background: oklch(96% 0.015 80); border-radius: 10px; padding: 8px 10px; font-family: 'Nunito Sans', sans-serif; font-size: 14px; font-weight: 700; color: oklch(30% 0.02 60);"/>
+              <sc-if value="{{ row.canDelete }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ row.onDelete }}" aria-label="Delete category" style="flex: 0 0 auto; width: 28px; height: 28px; border: none; background: transparent; color: oklch(70% 0.02 60); font-size: 16px; cursor: pointer;">✕</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <input placeholder="New category…" value="{{ newCategoryLabel }}" onChange="{{ onNewCategoryLabelChange }}" onKeyDown="{{ onNewCategoryKeyDown }}" style="flex: 1; min-width: 0; border: none; outline: none; background: oklch(96% 0.015 80); border-radius: 10px; padding: 8px 10px; font-family: 'Nunito Sans', sans-serif; font-size: 14px; font-weight: 600; color: oklch(30% 0.02 60);"/>
+          <button onClick="{{ onAddCategory }}" style="flex: 0 0 auto; border: none; padding: 8px 16px; border-radius: 10px; background: oklch(78% 0.09 350); color: white; font-family: 'Nunito Sans', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer;">Add</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="background: oklch(99% 0.008 80); border-radius: 20px; padding: 6px; box-shadow: 0 1px 2px oklch(30% 0.02 60 / 0.06); margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px;">
+        <input placeholder="Add something…" value="{{ newItemText }}" onChange="{{ onNewItemChange }}" onKeyDown="{{ onNewItemKeyDown }}" style="flex: 1; border: none; outline: none; background: transparent; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-weight: 600; color: oklch(30% 0.02 60); min-width: 0;"/>
+        <input placeholder="qty/note" value="{{ newItemNote }}" onChange="{{ onNewItemNoteChange }}" onKeyDown="{{ onNewItemKeyDown }}" style="width: 78px; border: none; outline: none; background: oklch(96% 0.015 80); border-radius: 10px; padding: 8px 10px; font-family: 'Nunito Sans', sans-serif; font-size: 13px; font-weight: 600; color: oklch(50% 0.02 60); text-align: center;"/>
+        <button onClick="{{ onAddItem }}" aria-label="Add item" style="flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: none; background: oklch(78% 0.09 350); color: white; font-size: 22px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">+</button>
+      </div>
+      <div style="display: flex; gap: 6px; padding: 0 10px 8px; flex-wrap: wrap;">
+        <sc-for list="{{ categoryPickerChips }}" as="chip" hint-placeholder-count="3">
+          <button onClick="{{ chip.onSelect }}" style="border: none; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; font-family: 'Nunito Sans', sans-serif; cursor: pointer; background: {{ chip.bg }}; color: {{ chip.color }};">{{ chip.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-for list="{{ groupedSections }}" as="section" hint-placeholder-count="2">
+      <div style="margin-bottom: 22px;">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: {{ section.labelColor }}; margin-bottom: 8px; padding-left: 4px;">{{ section.title }}</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <sc-for list="{{ section.items }}" as="item" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 12px; background: {{ item.cardBg }}; border-radius: 16px; padding: 14px 14px; box-shadow: 0 1px 2px oklch(30% 0.02 60 / 0.05); animation: popIn 0.25s ease;">
+              <button onClick="{{ item.onToggle }}" aria-label="Toggle done" style="flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; border: 2px solid {{ item.checkBorder }}; background: {{ item.checkBg }}; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                <sc-if value="{{ item.checked }}" hint-placeholder-val="{{ false }}">
+                  <span style="color: white; font-size: 14px; font-weight: 900; animation: checkPop 0.2s ease;">✓</span>
+                </sc-if>
+              </button>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 16px; font-weight: 700; color: {{ item.textColor }}; text-decoration: {{ item.strike }}; word-break: break-word;">{{ item.name }}</div>
+                <sc-if value="{{ item.hasNote }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: 12px; font-weight: 600; color: {{ item.noteColor }}; margin-top: 2px;">{{ item.note }}</div>
+                </sc-if>
+              </div>
+              <button onClick="{{ item.onDelete }}" aria-label="Delete" style="flex: 0 0 auto; width: 30px; height: 30px; border: none; background: transparent; color: oklch(70% 0.02 60); font-size: 18px; cursor: pointer; border-radius: 50%;">✕</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+
+    <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align: center; padding: 60px 20px; color: oklch(60% 0.02 60);">
+        <div style="font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: oklch(45% 0.03 30); margin-bottom: 6px;">All clear ✨</div>
+        <div style="font-size: 14px; font-weight: 600;">Add something above to get started.</div>
+      </div>
+    </sc-if>
+
+    <div style="margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div style="background: oklch(93% 0.03 350); border-radius: 20px; padding: 18px; text-align: center;">
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(50% 0.06 350); margin-bottom: 6px;">Countdown to Bali</div>
+        <div style="font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600; color: oklch(38% 0.06 350); line-height: 1;">{{ baliCountdownNumber }}</div>
+        <div style="font-size: 13px; font-weight: 700; color: oklch(45% 0.05 350); margin-top: 4px;">{{ baliCountdownText }}</div>
+      </div>
+
+      <div style="background: oklch(92% 0.025 90); border-radius: 20px; padding: 18px; text-align: center;">
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(48% 0.05 90); margin-bottom: 6px;">Finance Tracker</div>
+        <sc-if value="{{ editingSavings }}" hint-placeholder-val="{{ false }}">
+          <input value="{{ savingsDraft }}" onChange="{{ onSavingsDraftChange }}" onKeyDown="{{ onSavingsKeyDown }}" onBlur="{{ onSaveSavings }}" autoFocus="{{ true }}" inputMode="decimal" style="width: 100px; text-align: center; border: none; outline: none; background: white; border-radius: 10px; padding: 6px 8px; font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; color: oklch(36% 0.05 90);"/>
+        </sc-if>
+        <sc-if value="{{ notEditingSavings }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ onStartEditSavings }}" style="font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600; color: oklch(36% 0.05 90); line-height: 1; cursor: pointer;">{{ savingsFormatted }}</div>
+        </sc-if>
+        <div style="font-size: 13px; font-weight: 700; color: oklch(45% 0.04 90); margin-top: 4px;">saved so far ✎</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 12px; background: oklch(99% 0.008 80); border-radius: 20px; padding: 18px; box-shadow: 0 1px 2px oklch(30% 0.02 60 / 0.06); display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(55% 0.02 60); margin-bottom: 4px;">Uluwatu right now</div>
+        <sc-if value="{{ weatherOk }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 14px; font-weight: 700; color: oklch(35% 0.02 60);">{{ weatherLabel }}</div>
+        </sc-if>
+        <sc-if value="{{ weatherLoading }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size: 14px; font-weight: 700; color: oklch(55% 0.02 60);">Fetching weather…</div>
+        </sc-if>
+        <sc-if value="{{ weatherError }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 14px; font-weight: 700; color: oklch(55% 0.02 60);">Weather unavailable</div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ weatherOk }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family: 'Fraunces', serif; font-size: 30px; font-weight: 600; color: oklch(45% 0.05 200);">{{ weatherTemp }}</div>
+      </sc-if>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const DEFAULT_CATEGORIES = [
+  { key: 'groceries', label: 'Groceries', hue: 350 },
+  { key: 'home', label: 'Home', hue: 30 },
+  { key: 'other', label: 'Other', hue: 60 },
+];
+const HUE_CYCLE = [350, 30, 60, 200, 280, 120];
+const STORAGE_KEY = 'bali-list-items-v1';
+const CATEGORY_STORAGE_KEY = 'bali-list-categories-v1';
+const SAVINGS_STORAGE_KEY = 'bali-list-savings-v1';
+
+function loadSavings() {
+  try {
+    const raw = localStorage.getItem(SAVINGS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return 3000;
+}
+
+function loadItems() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [
+    { id: 'seed1', name: 'Coconut milk', note: '2 cans', category: 'groceries', checked: false },
+    { id: 'seed2', name: 'Fresh flowers', note: '', category: 'home', checked: false },
+    { id: 'seed3', name: 'Sunscreen', note: 'reef safe', category: 'other', checked: true },
+  ];
+}
+
+function loadCategories() {
+  try {
+    const raw = localStorage.getItem(CATEGORY_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return DEFAULT_CATEGORIES;
+}
+
+class Component extends DCLogic {
+  state = {
+    items: loadItems(),
+    categories: loadCategories(),
+    newItemText: '',
+    newItemNote: '',
+    newItemCategory: (loadCategories()[0] || DEFAULT_CATEGORIES[0]).key,
+    activeFilter: 'all',
+    managingCategories: false,
+    newCategoryLabel: '',
+    savings: loadSavings(),
+    editingSavings: false,
+    savingsDraft: '',
+    weather: null,
+    weatherStatus: 'loading',
+  };
+
+  componentDidMount() {
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=-8.829&longitude=115.084&current_weather=true&timezone=auto')
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.current_weather) {
+          this.setState({ weather: data.current_weather, weatherStatus: 'ok' });
+        } else {
+          this.setState({ weatherStatus: 'error' });
+        }
+      })
+      .catch(() => this.setState({ weatherStatus: 'error' }));
+  }
+
+  weatherCodeToLabel(code) {
+    const map = {
+      0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
+      45: 'Foggy', 48: 'Foggy', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+      61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+      80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy showers',
+      95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm',
+    };
+    return map[code] || 'Weather update';
+  }
+
+  persist(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+  }
+
+  persistCategories(categories) {
+    try { localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories)); } catch (e) {}
+  }
+
+  startEditSavings() {
+    this.setState({ editingSavings: true, savingsDraft: String(this.state.savings) });
+  }
+
+  saveSavings() {
+    const val = parseFloat(this.state.savingsDraft);
+    const savings = isNaN(val) ? this.state.savings : Math.max(0, val);
+    try { localStorage.setItem(SAVINGS_STORAGE_KEY, JSON.stringify(savings)); } catch (e) {}
+    this.setState({ savings, editingSavings: false });
+  }
+
+  addCategory() {
+    const label = this.state.newCategoryLabel.trim();
+    if (!label) return;
+    const key = 'cat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const usedHues = this.state.categories.map(c => c.hue);
+    const hue = HUE_CYCLE.find(h => !usedHues.includes(h)) ?? HUE_CYCLE[this.state.categories.length % HUE_CYCLE.length];
+    const categories = [...this.state.categories, { key, label, hue }];
+    this.persistCategories(categories);
+    this.setState({ categories, newCategoryLabel: '' });
+  }
+
+  renameCategory(key, label) {
+    const categories = this.state.categories.map(c => c.key === key ? { ...c, label } : c);
+    this.persistCategories(categories);
+    this.setState({ categories });
+  }
+
+  deleteCategory(key) {
+    if (this.state.categories.length <= 1) return;
+    const categories = this.state.categories.filter(c => c.key !== key);
+    const fallbackKey = categories[0].key;
+    const items = this.state.items.map(it => it.category === key ? { ...it, category: fallbackKey } : it);
+    this.persistCategories(categories);
+    this.persist(items);
+    this.setState({
+      categories,
+      items,
+      newItemCategory: this.state.newItemCategory === key ? fallbackKey : this.state.newItemCategory,
+      activeFilter: this.state.activeFilter === key ? 'all' : this.state.activeFilter,
+    });
+  }
+
+  addItem() {
+    const text = this.state.newItemText.trim();
+    if (!text) return;
+    const item = {
+      id: 'item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      name: text,
+      note: this.state.newItemNote.trim(),
+      category: this.state.newItemCategory,
+      checked: false,
+    };
+    const items = [...this.state.items, item];
+    this.persist(items);
+    this.setState({ items, newItemText: '', newItemNote: '' });
+  }
+
+  toggleItem(id) {
+    const items = this.state.items.map(it => it.id === id ? { ...it, checked: !it.checked } : it);
+    this.persist(items);
+    this.setState({ items });
+  }
+
+  deleteItem(id) {
+    const items = this.state.items.filter(it => it.id !== id);
+    this.persist(items);
+    this.setState({ items });
+  }
+
+  renderVals() {
+    const { items, newItemText, newItemNote, newItemCategory, activeFilter, categories, managingCategories, newCategoryLabel, savings, editingSavings, savingsDraft, weather, weatherStatus } = this.state;
+    const NEUTRAL_SOFT = 'oklch(93% 0.012 80)';
+
+    const categoryTabs = [{ key: 'all', label: 'All', hue: null }, ...categories].map(cat => {
+      const active = activeFilter === cat.key;
+      return {
+        label: cat.label,
+        onSelect: () => this.setState({ activeFilter: cat.key }),
+        bg: active ? (cat.hue == null ? 'oklch(35% 0.03 30)' : `oklch(78% 0.09 ${cat.hue})`) : NEUTRAL_SOFT,
+        color: active ? 'white' : 'oklch(45% 0.02 60)',
+      };
+    });
+
+    const categoryPickerChips = categories.map(cat => {
+      const active = newItemCategory === cat.key;
+      return {
+        label: cat.label,
+        onSelect: () => this.setState({ newItemCategory: cat.key }),
+        bg: active ? `oklch(78% 0.09 ${cat.hue})` : NEUTRAL_SOFT,
+        color: active ? 'white' : 'oklch(50% 0.02 60)',
+      };
+    });
+
+    const filtered = activeFilter === 'all' ? items : items.filter(it => it.category === activeFilter);
+
+    const groupedSections = categories
+      .map(cat => {
+        const catItems = filtered.filter(it => it.category === cat.key);
+        if (catItems.length === 0) return null;
+        const sorted = [...catItems].sort((a, b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1));
+        return {
+          title: cat.label,
+          labelColor: `oklch(60% 0.07 ${cat.hue})`,
+          items: sorted.map(item => ({
+            checked: item.checked,
+            name: item.name,
+            note: item.note,
+            hasNote: !!item.note,
+            noteColor: 'oklch(55% 0.02 60)',
+            textColor: item.checked ? 'oklch(65% 0.02 60)' : 'oklch(30% 0.02 60)',
+            strike: item.checked ? 'line-through' : 'none',
+            cardBg: item.checked ? 'oklch(97% 0.008 80)' : 'oklch(99% 0.008 80)',
+            checkBorder: item.checked ? `oklch(78% 0.09 ${cat.hue})` : 'oklch(80% 0.02 60)',
+            checkBg: item.checked ? `oklch(78% 0.09 ${cat.hue})` : 'transparent',
+            onToggle: () => this.toggleItem(item.id),
+            onDelete: () => this.deleteItem(item.id),
+          })),
+        };
+      })
+      .filter(Boolean);
+
+    const remainingText = 'Things To Get';
+
+    const now = new Date();
+    let tripYear = now.getFullYear();
+    const target = new Date(tripYear, 9, 20);
+    if (new Date(now.getFullYear(), now.getMonth(), now.getDate()) > target) {
+      target.setFullYear(tripYear + 1);
+    }
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysLeft = Math.ceil((target - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / msPerDay);
+    const baliCountdownText = daysLeft <= 0 ? "We're in Bali! 🌴" : daysLeft === 1 ? '1 day to go' : `${daysLeft} days to go`;
+
+    const manageRows = categories.map(cat => ({
+      key: cat.key,
+      dot: `oklch(78% 0.09 ${cat.hue})`,
+      label: cat.label,
+      onLabelChange: e => this.renameCategory(cat.key, e.target.value),
+      onDelete: () => this.deleteCategory(cat.key),
+      canDelete: categories.length > 1,
+    }));
+
+    return {
+      categoryTabs,
+      categoryPickerChips,
+      groupedSections,
+      showEmpty: filtered.length === 0,
+      remainingText,
+      newItemText,
+      newItemNote,
+      onNewItemChange: e => this.setState({ newItemText: e.target.value }),
+      onNewItemNoteChange: e => this.setState({ newItemNote: e.target.value }),
+      onNewItemKeyDown: e => { if (e.key === 'Enter') this.addItem(); },
+      onAddItem: () => this.addItem(),
+      managingCategories,
+      onToggleManageCategories: () => this.setState({ managingCategories: !managingCategories }),
+      manageRows,
+      newCategoryLabel,
+      onNewCategoryLabelChange: e => this.setState({ newCategoryLabel: e.target.value }),
+      onNewCategoryKeyDown: e => { if (e.key === 'Enter') this.addCategory(); },
+      onAddCategory: () => this.addCategory(),
+      baliCountdownText,
+      baliCountdownNumber: daysLeft > 0 ? daysLeft : 0,
+      savingsFormatted: `£${Number(savings).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`,
+      editingSavings,
+      notEditingSavings: !editingSavings,
+      savingsDraft,
+      onSavingsDraftChange: e => this.setState({ savingsDraft: e.target.value }),
+      onSavingsKeyDown: e => { if (e.key === 'Enter') this.saveSavings(); },
+      onStartEditSavings: () => this.startEditSavings(),
+      onSaveSavings: () => this.saveSavings(),
+      weatherLoading: weatherStatus === 'loading',
+      weatherError: weatherStatus === 'error',
+      weatherOk: weatherStatus === 'ok',
+      weatherTemp: weather ? `${Math.round(weather.temperature)}°C` : '',
+      weatherLabel: weather ? this.weatherCodeToLabel(weather.weathercode) : '',
+    };
+  }
+}
+
+</script>
+</body>
+</html>
