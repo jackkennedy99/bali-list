@@ -1,15 +1,19 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
 const DEFAULT_CATEGORIES = [
-  { key: 'groceries', label: 'Groceries', hue: 350 },
-  { key: 'home', label: 'Home', hue: 30 },
-  { key: 'other', label: 'Other', hue: 60 },
+  { key: 'medicine', label: 'Medicine', hue: 350 },
+  { key: 'tech', label: 'Tech Essentials', hue: 30 },
+  { key: 'travel', label: 'Travel Essentials', hue: 60 },
+  { key: 'personal', label: 'Personal Essentials', hue: 200 },
+  { key: 'work', label: 'Work Essentials', hue: 280 },
+  { key: 'money', label: 'Money', hue: 120 },
+  { key: 'clothes', label: 'Clothes', hue: 170 },
 ];
-const HUE_CYCLE = [350, 30, 60, 200, 280, 120];
+const HUE_CYCLE = [350, 30, 60, 200, 280, 120, 170];
 const NEUTRAL_SOFT = 'oklch(93% 0.012 80)';
 
-const STORAGE_KEY = 'bali-list-items-v1';
-const CATEGORY_STORAGE_KEY = 'bali-list-categories-v1';
+const STORAGE_KEY = 'bali-list-items-v2';
+const CATEGORY_STORAGE_KEY = 'bali-list-categories-v2';
 const SAVINGS_STORAGE_KEY = 'bali-list-savings-v1';
 
 const WEATHER_CODE_LABELS = {
@@ -32,11 +36,46 @@ function saveJSON(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
 }
 
-const DEFAULT_ITEMS = [
-  { id: 'seed1', name: 'Coconut milk', note: '2 cans', category: 'groceries', checked: false },
-  { id: 'seed2', name: 'Fresh flowers', note: '', category: 'home', checked: false },
-  { id: 'seed3', name: 'Sunscreen', note: 'reef safe', category: 'other', checked: true },
-];
+const DEFAULT_ITEM_NAMES = {
+  medicine: [
+    'Omeprazol', 'Liquid paracetamol / ibuprofen', 'Electrolytes', 'Dioralyte', 'Immodium',
+    'Sudocream', 'Plasters', 'Rennies / Gavisgon', 'Anti-histamines', 'Pre & Pro biotics',
+    'Mosquito repellent', 'Hydrocortisone 1% cream for itchy bites/rashes', 'Anti septic cream',
+    'Tampons / Pads', 'Pepto-bismol', 'Buscopan', 'Thermometer', 'Antiseptic wipes', 'Tweezers',
+    'Scissors', 'Anti fungal cream - Canesten', 'Cold & Flu tablets', 'Nasal spray',
+    'Sterile saline eye wash', 'Small torch', 'Motion sickness tablets', 'Small instant cold pack',
+    'Stain remover pen',
+  ],
+  tech: [
+    'Laptop & charger', 'Phone & Charger', 'Kindle & Charger', 'Ipad & Charger',
+    'Headphones & Charger', 'Canon & Charger', 'Speaker & Charger', 'Extension lead x3',
+    '3/4 Adapters', 'Cable Organiser', 'Ring light', 'Tri-pod',
+  ],
+  travel: [
+    'Passport', 'Travel Insurance documents', 'Driving License', 'Visa Document', 'Air tags',
+    'Packing cubes', 'Lock for luggage',
+  ],
+  personal: [
+    'Face masks', 'Makeup remover', 'Cotton pads', 'Serum', 'Moisturiser', 'Face SPF',
+    'Body moisturiser', 'Inky list body exfoliator', 'Makeup', 'Hair tools', 'Hair care',
+    'Perfume', 'Fan',
+  ],
+  work: [
+    'Nail lamp', 'Nail drill', 'BIAB', 'Nail files', 'Nail Brushes', 'Lint free wipes', 'Dust brush',
+  ],
+  money: [
+    'Debit card', 'Credit card', 'Backup bank card kept separately',
+    'Small amount of Indonesian Rupiah', 'Emergency cash in GBP/USD',
+  ],
+  clothes: [
+    'Sports bras', 'Havianas', 'Trainers', 'Gym clothes', 'Basic tops', 'Shorts',
+    'Linen co ords', "PJ's", 'Light jacket', 'Evening fits', 'Skirts',
+  ],
+};
+
+const DEFAULT_ITEMS = Object.entries(DEFAULT_ITEM_NAMES).flatMap(([category, names]) =>
+  names.map((name, i) => ({ id: `${category}-${i + 1}`, name, note: '', category, checked: false }))
+);
 
 function computeCountdown() {
   const now = new Date();
